@@ -12,27 +12,19 @@ module CollectiveIdea #:nodoc:
         # == Params
         #  * +class_or_item+ - Class name or top level times
         #  * +mover+ - The item that is being move, used to exlude impossible moves
-        #  * +&block+ - a block that will be used to display: { |item| ... item.name }
+        #  * +&block+ - a block that will be used to display: { |item, descendants, level| ... }
         #
         # == Usage
         #
-        #   <%= f.select :parent_id, nested_set_options(Category, @category) {|i|
-        #       "#{'–' * i.level} #{i.name}"
+        #   <%= f.select :parent_id, nested_set_options(Category, @category) { |item, descendants, level|
+        #       "#{'–' * level} #{item.name}"
         #     }) %>
         #
-        def nested_set_options(class_or_item, mover = nil)
-          class_or_item = class_or_item.roots if class_or_item.is_a?(Class)
-          items = Array(class_or_item)
-          result = []
-          items.each do |root|
-            result += root.self_and_descendants.map do |i|
-              if mover.nil? || mover.new_record? || mover.move_possible?(i)
-                [yield(i), i.id]
-              end
-            end.compact
+        def nested_set_options(class_or_item, mover = nil, &block)
+          class_or_item.to_a(true, mover) do |item, descendants, level|
+            [ block.call(item, descendants, level), item.id ]
           end
-          result
-        end  
+        end
         
       end
     end  

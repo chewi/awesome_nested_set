@@ -212,6 +212,24 @@ module CollectiveIdea #:nodoc:
             yield(o, path.length - 1)
           end
         end
+
+        # Returns the entire set as a nested array. If flat is true then a flat
+        # array is returned instead. Specify mover to exclude any impossible
+        # moves. Pass a block to perform an operation on each item. The block
+        # arguments are |item, descendants, level|.
+        def traverse(flat = false, mover = nil, &block)
+          descendants = all(:order => quoted_left_column_name)
+          array = []
+
+          while not descendants.empty?
+            items = descendants.shift.traverse(flat, mover, descendants, 0, &block)
+            array.send flat ? 'concat' : '<<', items
+          end
+
+          return array
+        end
+
+        alias_method :to_a, :traverse
       end
       
       # Mixed into both classes and instances to provide easy access to the column names
@@ -424,6 +442,35 @@ module CollectiveIdea #:nodoc:
           end.join("\n")
         end
         
+        # Returns self and its descendants as a nested array. If flat is true
+        # then a flat array is returned instead. Specify mover to exclude any
+        # impossible moves. Pass a block to perform an operation on each item.
+        # The block arguments are |item, descendants, level|. The remaining
+        # arguments for this method are for recursion and should not normally
+        # be given.
+        def traverse(flat = false, mover = nil, descendants = nil, level = self.level, &block)
+          descendants ||= self.descendants
+          array = []
+
+          while not descendants.empty?
+            break unless descendants.first.parent_id == self.id
+            item = descendants.shift
+            items = item.traverse(flat, mover, descendants, level + 1, &block)
+            array.send flat ? 'concat' : '<<', items if mover.nil? or mover.new_record? or mover.move_possible?(item)
+          end
+
+          item = block_given? ? yield(self, array, level) : self
+
+          if flat
+            array.unshift item
+            return array
+          else
+            return [ item, array ]
+          end
+        end
+
+        alias_method :to_a, :traverse
+
       protected
       
         def without_self(scope)

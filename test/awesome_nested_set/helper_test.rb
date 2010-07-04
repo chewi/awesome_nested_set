@@ -16,8 +16,8 @@ module CollectiveIdea
             ['- Child 3', 5],
             [" Top Level 2", 6]
           ]
-          actual = nested_set_options(Category) do |c|
-            "#{'-' * c.level} #{c.name}"
+          actual = nested_set_options(Category) do |c,d,level|
+            "#{'-' * level} #{c.name}"
           end
           assert_equal expected, actual
         end
@@ -29,8 +29,8 @@ module CollectiveIdea
             ['- Child 3', 5],
             [" Top Level 2", 6]
           ]
-          actual = nested_set_options(Category, categories(:child_2)) do |c|
-            "#{'-' * c.level} #{c.name}"
+          actual = nested_set_options(Category, categories(:child_2)) do |c,d,level|
+            "#{'-' * level} #{c.name}"
           end
           assert_equal expected, actual
         end
